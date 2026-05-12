@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Florería · Agenda de Pedidos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --cream: #faf6f0;
+      --blush: #e8c9b8;
+      --rose: #c4705a;
+      --deep: #2e1f1a;
+      --sage: #7a8c6e;
+      --gold: #b89a6a;
+      --light-sage: #e8ede4;
+      --card-bg: #fff9f5;
+      --border: #e2d5c8;
+      --paid: #5a8c6e;
+      --unpaid: #c4705a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--deep);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--deep);
+      padding: 0 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      color: var(--cream);
+      letter-spacing: .08em;
+      font-weight: 300;
+    }
+
+    .logo span { color: var(--blush); font-style: italic; }
+
+    .header-actions { display: flex; gap: 1rem; align-items: center; }
+
+    .btn-primary {
+      background: var(--rose);
+      color: #fff;
+      border: none;
+      padding: .6rem 1.4rem;
+      border-radius: 2px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .85rem;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: .04em;
+      transition: background .2s, transform .1s;
+    }
+    .btn-primary:hover { background: #b5604a; transform: translateY(-1px); }
+
+    /* ── STATS BAR ── */
+    .stats {
+      background: var(--light-sage);
+      padding: .8rem 2.5rem;
+      display: flex;
+      gap: 2.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .stat { display: flex; flex-direction: column; }
+    .stat-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--deep);
+      line-height: 1;
+    }
+    .stat-label { font-size: .7rem; color: var(--sage); letter-spacing: .1em; text-transform: uppercase; margin-top: .2rem; }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+      height: calc(100vh - 72px - 52px);
+    }
+
+    /* ── FORM PANEL ── */
+    .form-panel {
+      background: var(--card-bg);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 2rem;
+    }
+
+    .panel-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+      color: var(--deep);
+      margin-bottom: 1.5rem;
+      padding-bottom: .8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-title em { color: var(--rose); }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+    }
+
+    label {
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--sage);
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: .6rem .8rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .88rem;
+      color: var(--deep);
+      transition: border-color .2s;
+      width: 100%;
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--rose);
+    }
+
+    textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+    /* Image upload */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 4px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #fff;
+      position: relative;
+    }
+    .upload-area:hover { border-color: var(--rose); background: #fdf5f2; }
+    .upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%;
+    }
+    .upload-icon { font-size: 2rem; margin-bottom: .4rem; }
+    .upload-text { font-size: .8rem; color: var(--sage); }
+    .upload-preview {
+      width: 100%;
+      max-height: 140px;
+      object-fit: cover;
+      border-radius: 2px;
+      display: none;
+    }
+
+    /* Payment toggle */
+    .payment-toggle {
+      display: flex;
+      gap: .5rem;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: .55rem;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .83rem;
+      cursor: pointer;
+      transition: all .2s;
+      font-weight: 500;
+    }
+    .toggle-btn.paid-active { background: var(--paid); color: #fff; border-color: var(--paid); }
+    .toggle-btn.unpaid-active { background: var(--unpaid); color: #fff; border-color: var(--unpaid); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--deep);
+      color: var(--cream);
+      border: none;
+      padding: .85rem;
+      border-radius: 2px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      cursor: pointer;
+      margin-top: .5rem;
+      transition: background .2s;
+    }
+    .btn-submit:hover { background: var(--rose); }
+
+    /* ── ORDERS PANEL ── */
+    .orders-panel {
+      overflow-y: auto;
+      padding: 2rem 2rem;
+    }
+
+    .orders-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .orders-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: .5rem;
+    }
+
+    .filter-btn {
+      padding: .35rem .9rem;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: #fff;
+      font-size: .75rem;
+      cursor: pointer;
+      transition: all .15s;
+      letter-spacing: .05em;
+    }
+    .filter-btn.active { background: var(--deep); color: var(--cream); border-color: var(--deep); }
+    .filter-btn:hover:not(.active) { border-color: var(--rose); color: var(--rose); }
+
+    /* ── ORDER CARDS ── */
+    .orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+
+    .order-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+      position: relative;
+      animation: fadeIn .3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .order-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(46,31,26,.12);
+    }
+
+    .card-image {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      display: block;
+      background: var(--light-sage);
+    }
+
+    .card-image-placeholder {
+      width: 100%;
+      height: 140px;
+      background: linear-gradient(135deg, var(--light-sage) 0%, var(--blush) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+    }
+
+    .card-body { padding: 1rem 1.1rem 1.1rem; }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: .6rem;
+    }
+
+    .card-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .badge {
+      font-size: .65rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      padding: .25rem .6rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .badge-paid { background: #d4edda; color: var(--paid); }
+    .badge-unpaid { background: #fde8e2; color: var(--unpaid); }
+
+    .card-order {
+      font-size: .83rem;
+      color: #555;
+      margin-bottom: .7rem;
+      line-height: 1.4;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .78rem;
+      color: var(--sage);
+    }
+
+    .meta-icon { font-size: .9rem; flex-shrink: 0; }
+
+    .card-actions {
+      display: flex;
+      gap: .5rem;
+      margin-top: .9rem;
+      padding-top: .8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-action {
+      flex: 1;
+      padding: .4rem;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: #fff;
+      font-size: .75rem;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .15s;
+    }
+    .btn-action:hover { background: var(--light-sage); }
+    .btn-action.danger:hover { background: #fde8e2; border-color: var(--rose); color: var(--rose); }
+    .btn-action.toggle-pay { color: var(--paid); }
+    .btn-action.toggle-pay:hover { background: #d4edda; border-color: var(--paid); }
+
+    .order-num {
+      position: absolute;
+      top: .6rem;
+      left: .6rem;
+      background: rgba(46,31,26,.75);
+      color: var(--cream);
+      font-size: .65rem;
+      padding: .2rem .5rem;
+      border-radius: 20px;
+      letter-spacing: .05em;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--sage);
+      grid-column: 1 / -1;
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state p { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(46,31,26,.5);
+      backdrop-filter: blur(4px);
+      display: none;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card-bg);
+      border-radius: 4px;
+      max-width: 520px;
+      width: 90%;
+      padding: 2rem;
+      border: 1px solid var(--border);
+      animation: modalIn .25s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .modal-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+    }
+    .modal-img {
+      width: 100%; max-height: 220px;
+      object-fit: cover; border-radius: 2px;
+      margin-bottom: 1rem;
+    }
+    .modal-detail { font-size: .88rem; margin-bottom: .5rem; line-height: 1.5; }
+    .modal-detail strong { color: var(--rose); }
+    .btn-close-modal {
+      margin-top: 1.2rem;
+      width: 100%;
+      padding: .7rem;
+      background: var(--deep);
+      color: var(--cream);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .88rem;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">✿ Flores &amp; <span>Arreglos</span></div>
+  <div class="header-actions">
+    <button class="btn-primary" onclick="scrollToForm()">+ Nuevo Pedido</button>
+  </div>
+</header>
+
+<!-- STATS -->
+<div class="stats" id="statsBar">
+  <div class="stat"><span class="stat-val" id="statTotal">0</span><span class="stat-label">Total pedidos</span></div>
+  <div class="stat"><span class="stat-val" id="statPaid">0</span><span class="stat-label">Pagados</span></div>
+  <div class="stat"><span class="stat-val" id="statUnpaid">0</span><span class="stat-label">Pendientes</span></div>
+  <div class="stat"><span class="stat-val" id="statToday">0</span><span class="stat-label">Para hoy</span></div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- FORM PANEL -->
+  <aside class="form-panel" id="formPanel">
+    <div class="panel-title">Agendar <em>nuevo pedido</em></div>
+
+    <!-- Nombre -->
+    <div class="form-group">
+      <label>Nombre del cliente</label>
+      <input type="text" id="clientName" placeholder="Ej. María González"/>
+    </div>
+
+    <!-- Teléfono -->
+    <div class="form-group">
+      <label>Teléfono</label>
+      <input type="tel" id="clientPhone" placeholder="Ej. 555-123-4567"/>
+    </div>
+
+    <!-- Pedido -->
+    <div class="form-group">
+      <label>Descripción del arreglo</label>
+      <textarea id="orderDesc" placeholder="Ej. Arreglo de rosas rojas y girasoles, con moño blanco, para regalo de aniversario…"></textarea>
+    </div>
+
+    <!-- Imagen -->
+    <div class="form-group">
+      <label>Imagen de referencia</label>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)"/>
+        <div id="uploadPlaceholder">
+          <div class="upload-icon">🌸</div>
+          <div class="upload-text">Haz clic o arrastra una imagen de referencia</div>
+        </div>
+        <img class="upload-preview" id="uploadPreview" alt="Vista previa"/>
+      </div>
+    </div>
+
+    <!-- Fecha y hora -->
+    <div class="form-group">
+      <label>Fecha y hora de entrega</label>
+      <input type="datetime-local" id="deliveryTime"/>
+    </div>
+
+    <!-- Dirección -->
+    <div class="form-group">
+      <label>Dirección de entrega</label>
+      <input type="text" id="deliveryAddress" placeholder="Calle, número, colonia, ciudad"/>
+    </div>
+
+    <!-- Pago -->
+    <div class="form-group">
+      <label>Estado de pago</label>
+      <div class="payment-toggle">
+        <button class="toggle-btn paid-active" id="btnPaid" onclick="setPayment('paid')">✓ Pagado</button>
+        <button class="toggle-btn" id="btnUnpaid" onclick="setPayment('unpaid')">✗ Pendiente</button>
+      </div>
+    </div>
+
+    <button class="btn-submit" onclick="addOrder()">Registrar Pedido</button>
+  </aside>
+
+  <!-- ORDERS PANEL -->
+  <section class="orders-panel">
+    <div class="orders-header">
+      <div class="orders-title">📋 Pedidos agendados</div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterOrders('all', this)">Todos</button>
+        <button class="filter-btn" onclick="filterOrders('paid', this)">Pagados</button>
+        <button class="filter-btn" onclick="filterOrders('unpaid', this)">Pendientes</button>
+      </div>
+    </div>
+    <div class="orders-grid" id="ordersGrid">
+      <!-- Cards aquí -->
+    </div>
+  </section>
+
+</main>
+
+<!-- MODAL DE DETALLE -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <img class="modal-img" id="modalImg" alt="" style="display:none"/>
+    <div class="modal-detail" id="modalPhone"></div>
+    <div class="modal-detail" id="modalOrder"></div>
+    <div class="modal-detail" id="modalTime"></div>
+    <div class="modal-detail" id="modalAddr"></div>
+    <div class="modal-detail" id="modalPay"></div>
+    <button class="btn-close-modal" onclick="closeModal()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+  let orders = JSON.parse(localStorage.getItem('floreria_orders') || '[]');
+  let paymentStatus = 'paid';
+  let currentFilter = 'all';
+  let orderCounter = orders.length ? Math.max(...orders.map(o=>o.id)) + 1 : 1;
+
+  function save() {
+    localStorage.setItem('floreria_orders', JSON.stringify(orders));
+    updateStats();
+  }
+
+  function setPayment(val) {
+    paymentStatus = val;
+    document.getElementById('btnPaid').className = 'toggle-btn' + (val==='paid' ? ' paid-active' : '');
+    document.getElementById('btnUnpaid').className = 'toggle-btn' + (val==='unpaid' ? ' unpaid-active' : '');
+  }
+
+  function previewImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const prev = document.getElementById('uploadPreview');
+      prev.src = ev.target.result;
+      prev.style.display = 'block';
+      document.getElementById('uploadPlaceholder').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function addOrder() {
+    const name = document.getElementById('clientName').value.trim();
+    const phone = document.getElementById('clientPhone').value.trim();
+    const desc = document.getElementById('orderDesc').value.trim();
+    const time = document.getElementById('deliveryTime').value;
+    const addr = document.getElementById('deliveryAddress').value.trim();
+    const imgSrc = document.getElementById('uploadPreview').src || '';
+
+    if (!name || !desc || !time || !addr) {
+      alert('Por favor completa los campos: nombre, descripción, fecha/hora y dirección.');
+      return;
+    }
+
+    const order = {
+      id: orderCounter++,
+      name, phone, desc, time, addr,
+      image: imgSrc && imgSrc !== window.location.href ? imgSrc : '',
+      paid: paymentStatus === 'paid',
+      createdAt: new Date().toISOString()
+    };
+
+    orders.unshift(order);
+    save();
+    renderOrders();
+    resetForm();
+  }
+
+  function resetForm() {
+    document.getElementById('clientName').value = '';
+    document.getElementById('clientPhone').value = '';
+    document.getElementById('orderDesc').value = '';
+    document.getElementById('deliveryTime').value = '';
+    document.getElementById('deliveryAddress').value = '';
+    document.getElementById('uploadPreview').src = '';
+    document.getElementById('uploadPreview').style.display = 'none';
+    document.getElementById('uploadPlaceholder').style.display = 'block';
+    document.getElementById('imageInput').value = '';
+    setPayment('paid');
+  }
+
+  function deleteOrder(id) {
+    if (!confirm('¿Eliminar este pedido?')) return;
+    orders = orders.filter(o => o.id !== id);
+    save();
+    renderOrders();
+  }
+
+  function togglePaid(id) {
+    const o = orders.find(o => o.id === id);
+    if (o) { o.paid = !o.paid; save(); renderOrders(); }
+  }
+
+  function renderOrders() {
+    const grid = document.getElementById('ordersGrid');
+    const filtered = orders.filter(o => {
+      if (currentFilter === 'paid') return o.paid;
+      if (currentFilter === 'unpaid') return !o.paid;
+      return true;
+    });
+
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🌷</div><p>No hay pedidos en esta categoría</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(o => {
+      const dt = o.time ? new Date(o.time) : null;
+      const dateStr = dt ? dt.toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+      const timeStr = dt ? dt.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' }) : '';
+      const imgHTML = o.image
+        ? `<img class="card-image" src="${o.image}" alt="Referencia"/>`
+        : `<div class="card-image-placeholder">🌸</div>`;
+      return `
+        <div class="order-card" id="card-${o.id}">
+          <span class="order-num">#${String(o.id).padStart(3,'0')}</span>
+          ${imgHTML}
+          <div class="card-body">
+            <div class="card-top">
+              <div class="card-name">${o.name}</div>
+              <span class="badge ${o.paid ? 'badge-paid' : 'badge-unpaid'}">${o.paid ? 'Pagado' : 'Pendiente'}</span>
+            </div>
+            <div class="card-order">${o.desc.length > 80 ? o.desc.slice(0,80)+'…' : o.desc}</div>
+            <div class="card-meta">
+              ${o.phone ? `<div class="meta-row"><span class="meta-icon">📞</span>${o.phone}</div>` : ''}
+              <div class="meta-row"><span class="meta-icon">📅</span>${dateStr} ${timeStr}</div>
+              <div class="meta-row"><span class="meta-icon">📍</span>${o.addr.length>40 ? o.addr.slice(0,40)+'…' : o.addr}</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-action" onclick="openModal(${o.id})">Ver detalle</button>
+              <button class="btn-action toggle-pay" onclick="togglePaid(${o.id})">${o.paid ? 'Marcar pendiente' : 'Marcar pagado'}</button>
+              <button class="btn-action danger" onclick="deleteOrder(${o.id})">Eliminar</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function openModal(id) {
+    const o = orders.find(o => o.id === id);
+    if (!o) return;
+    const dt = o.time ? new Date(o.time) : null;
+    const dateStr = dt ? dt.toLocaleDateString('es-MX', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) : '—';
+    const timeStr = dt ? dt.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' }) : '';
+
+    document.getElementById('modalTitle').textContent = `Pedido #${String(o.id).padStart(3,'0')} · ${o.name}`;
+    const mi = document.getElementById('modalImg');
+    if (o.image) { mi.src = o.image; mi.style.display = 'block'; } else { mi.style.display = 'none'; }
+    document.getElementById('modalPhone').innerHTML = o.phone ? `<strong>Teléfono:</strong> ${o.phone}` : '';
+    document.getElementById('modalOrder').innerHTML = `<strong>Arreglo:</strong> ${o.desc}`;
+    document.getElementById('modalTime').innerHTML = `<strong>Entrega:</strong> ${dateStr} a las ${timeStr}`;
+    document.getElementById('modalAddr').innerHTML = `<strong>Dirección:</strong> ${o.addr}`;
+    document.getElementById('modalPay').innerHTML = `<strong>Pago:</strong> <span style="color:${o.paid ? 'var(--paid)' : 'var(--unpaid)'};font-weight:600">${o.paid ? '✓ Pagado' : '✗ Pendiente'}</span>`;
+
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById('modalOverlay'))
+      document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function filterOrders(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderOrders();
+  }
+
+  function updateStats() {
+    const today = new Date().toDateString();
+    document.getElementById('statTotal').textContent = orders.length;
+    document.getElementById('statPaid').textContent = orders.filter(o=>o.paid).length;
+    document.getElementById('statUnpaid').textContent = orders.filter(o=>!o.paid).length;
+    document.getElementById('statToday').textContent = orders.filter(o => {
+      return o.time && new Date(o.time).toDateString() === today;
+    }).length;
+  }
+
+  function scrollToForm() {
+    document.getElementById('formPanel').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('clientName').focus();
+  }
+
+  // Init
+  renderOrders();
+  updateStats();
+</script>
+</body>
+</html>
